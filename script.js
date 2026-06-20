@@ -183,6 +183,99 @@ function renderFeed() {
     else if (currentSort === 'discussed') sortedPosts.sort((a, b) => b.comment_count - a.comment_count);
 
     sortedPosts.forEach(post => {
+// ... [Keep your Supabase init and fetchPosts logic from previous code] ...
+
+// ==========================================
+// 3. CORE UI FLOW & NEW INTERACTIONS
+// ==========================================
+const revealBtn = document.getElementById('reveal-btn');
+const takeawayContainer = document.getElementById('takeaway-container');
+const takeawayText = document.getElementById('takeaway-text');
+const ctaText = document.getElementById('cta-text');
+const generateContainer = document.getElementById('generate-container');
+const generateAnotherBtn = document.getElementById('generate-another-btn');
+const generateWarning = document.getElementById('generate-warning');
+
+let generateClickCount = 0;
+let isTyping = false;
+
+async function triggerTakeaway(postData) {
+    if (isTyping) return;
+    isTyping = true;
+    
+    // Reset states
+    ctaText.classList.remove('opacity-100');
+    ctaText.classList.add('opacity-0');
+    generateContainer.classList.remove('opacity-100');
+    generateContainer.classList.add('opacity-0');
+    generateWarning.classList.add('hidden');
+    generateClickCount = 0;
+
+    takeawayContainer.classList.remove('hidden');
+    takeawayContainer.classList.add('flex');
+    
+    // Scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    await typeWriterEffect(takeawayText, postData.text, postData.highlighted_words);
+    
+    // Fade in CTA and Generate buttons
+    setTimeout(() => {
+        ctaText.classList.remove('opacity-0');
+        ctaText.classList.add('opacity-100');
+        generateContainer.classList.remove('opacity-0');
+        generateContainer.classList.add('opacity-100');
+        isTyping = false;
+    }, 500);
+}
+
+revealBtn.addEventListener('click', () => {
+    revealBtn.classList.add('hidden');
+    const dailyPost = posts[0] || MOCK_DATA[0];
+    triggerTakeaway(dailyPost);
+});
+
+// NEW: "Generate Another" Friction Logic
+generateAnotherBtn.addEventListener('click', () => {
+    if (generateClickCount === 0) {
+        // First click: Show friction warning
+        generateWarning.classList.remove('hidden');
+        generateAnotherBtn.innerText = "Yes, show me another";
+        generateClickCount++;
+    } else {
+        // Second click: Reveal random model
+        const randomPost = posts[Math.floor(Math.random() * posts.length)];
+        triggerTakeaway(randomPost);
+        generateAnotherBtn.innerText = "Reveal Another Model";
+    }
+});
+
+// NEW: Open specific model from Archive
+window.openModel = (postId) => {
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+        revealBtn.classList.add('hidden');
+        triggerTakeaway(post);
+    }
+};
+
+// ... [Keep your typeWriterEffect function exactly the same] ...
+
+// ==========================================
+// 4. DATABASE FETCH & FEED RENDER UPDATES
+// ==========================================
+
+function renderFeed() {
+    const feedContainer = document.getElementById('feed-container');
+    feedContainer.innerHTML = '';
+
+    // Sorting Logic...
+    let sortedPosts = [...posts];
+    if (currentSort === 'newest') sortedPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    else if (currentSort === 'top') sortedPosts.sort((a, b) => b.upvotes - a.upvotes);
+    else if (currentSort === 'discussed') sortedPosts.sort((a, b) => b.comment_count - a.comment_count);
+
+    sortedPosts.forEach(post => {
         const postEl = document.createElement('article');
         postEl.className = 'flex flex-col space-y-4';
 
