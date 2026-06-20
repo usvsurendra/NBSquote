@@ -3,17 +3,17 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 // ==========================================
 // 1. SUPABASE INITIALIZATION
 // ==========================================
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://fmsmtoawripfehcwxuva.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtc210b2F3cmlwZmVoY3d4dXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MTg2MTAsImV4cCI6MjA5NzQ5NDYxMH0.804z0O0AtW6-8nwFvuc4IVfb9O85jYRkDeJQTvYNDUA';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ==========================================
-// 2. STATE & MOCK FALLBACK (For immediate testing)
+// 2. STATE & MOCK FALLBACK
 // ==========================================
 let posts = [];
 let currentSort = 'newest';
 
-// Fallback data if Supabase is unconfigured or empty
+// Fallback data if your Supabase tables are currently empty
 const MOCK_DATA = [
     {
         id: 1,
@@ -116,7 +116,14 @@ async function fetchPosts() {
             .from('posts')
             .select('*');
 
-        if (postError || !postData || postData.length === 0) throw new Error("No data or not connected");
+        if (postError) throw new Error(postError.message);
+        
+        if (!postData || postData.length === 0) {
+            console.warn("Supabase tables are empty. Rendering MOCK_DATA.");
+            posts = [...MOCK_DATA];
+            renderFeed();
+            return;
+        }
 
         // Fetch comments to calculate comment counts natively client-side
         const { data: commentData } = await supabase
@@ -206,14 +213,14 @@ window.handleVote = async (postId, type) => {
         document.getElementById(`downvotes-${postId}`).innerText = posts[postIndex].downvotes;
     }
 
-    // Supabase Update
-    if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
-        const updateData = type === 'upvote' 
-            ? { upvotes: posts[postIndex].upvotes } 
-            : { downvotes: posts[postIndex].downvotes };
-            
-        await supabase.from('posts').update(updateData).eq('id', postId);
-    }
+    // Supabase Update (Only runs if data isn't mock data based on ID type)
+    if (typeof postId === 'number' && postId < 100) return; // Prevent updating MOCK_DATA in Supabase
+
+    const updateData = type === 'upvote' 
+        ? { upvotes: posts[postIndex].upvotes } 
+        : { downvotes: posts[postIndex].downvotes };
+        
+    await supabase.from('posts').update(updateData).eq('id', postId);
 };
 
 window.toggleComments = (postId) => {
@@ -242,10 +249,10 @@ window.submitComment = async (event, postId) => {
     document.getElementById(`comments-${postId}`).classList.remove('hidden');
     document.getElementById(`comments-${postId}`).classList.add('flex');
 
-    // Supabase Insertion
-    if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
-        await supabase.from('comments').insert([newComment]);
-    }
+    // Supabase Insertion (Only runs if data isn't mock data)
+    if (typeof postId === 'number' && postId < 100) return; 
+
+    await supabase.from('comments').insert([newComment]);
 };
 
 // Sort Switcher Logic
