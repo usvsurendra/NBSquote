@@ -13,51 +13,18 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let posts = [];
 let currentSort = 'newest';
 
-// Fallback data if your Supabase tables are currently empty
-
-
-// ==========================================
-// 3. CORE UI FLOW: REVEAL & TYPEWRITER
-// ==========================================
-const revealBtn = document.getElementById('reveal-btn');
-const takeawayContainer = document.getElementById('takeaway-container');
-const takeawayText = document.getElementById('takeaway-text');
-const ctaText = document.getElementById('cta-text');
-
-revealBtn.addEventListener('click', async () => {
-    revealBtn.classList.add('hidden');
-    takeawayContainer.classList.remove('hidden');
-    takeawayContainer.classList.add('flex');
-    
-    // Pick the most recent post as "Today's Takeaway"
-    const dailyPost = posts[0] || MOCK_DATA[0];
-    
-    await typeWriterEffect(takeawayText, dailyPost.text, dailyPost.highlighted_words);
-    
-    // Trigger CTA fade-in
-    setTimeout(() => {
-        ctaText.classList.remove('opacity-0');
-        ctaText.classList.add('opacity-100');
-    }, 500);
-});
-
-async function typeWriterEffect(element, text, highlights) {
-    element.innerHTML = '';
-    const words = text.split(' ');
-    
-    for (let i = 0; i < words.length; i++) {
-        const word = words[i];
-        const cleanWordForMatch = word.replace(/[.,!?]/g, ''); // strip basic punctuation for check
-        
-        // Check if word (with or without punctuation) is in highlights array
-        const isHighlighted = highlights.includes(word) || highlights.includes(cleanWordForMatch);
-        
-        const span = document.createElement('span');
-        // Apply ultra-minimalist inverted highlighting
-        if (isHighlighted) {
-            span.className = 'bg-black text-white px-2 py-1 mx-1 rounded-sm inline-block transition-all duration-300';
-        } else {
-// ... [Keep your Supabase init and fetchPosts logic from previous code] ...
+// Fallback data if DB fetch fails
+const MOCK_DATA = [
+    {
+        id: 1,
+        text: "The map is not the territory. Reality is far more complex than the models we use to understand it.",
+        upvotes: 142,
+        downvotes: 12,
+        comment_count: 5,
+        created_at: "2026-06-19T00:00:00Z",
+        comments: []
+    }
+];
 
 // ==========================================
 // 3. CORE UI FLOW & NEW INTERACTIONS
@@ -74,7 +41,7 @@ let generateClickCount = 0;
 let isTyping = false;
 
 async function triggerTakeaway(postData) {
-    if (isTyping) return;
+    if (isTyping || !postData) return;
     isTyping = true;
     
     // Reset states
@@ -91,7 +58,8 @@ async function triggerTakeaway(postData) {
     // Scroll to top smoothly
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    await typeWriterEffect(takeawayText, postData.text, postData.highlighted_words);
+    // Call clean typing effect
+    await typeWriterEffect(takeawayText, postData.text);
     
     // Fade in CTA and Generate buttons
     setTimeout(() => {
@@ -103,13 +71,22 @@ async function triggerTakeaway(postData) {
     }, 500);
 }
 
+// Clean, fast typing effect with no highlights
+async function typeWriterEffect(element, text) {
+    element.textContent = ''; 
+    for (let char of text) {
+        element.textContent += char;
+        await new Promise(r => setTimeout(r, 30)); 
+    }
+}
+
 revealBtn.addEventListener('click', () => {
     revealBtn.classList.add('hidden');
     const dailyPost = posts[0] || MOCK_DATA[0];
     triggerTakeaway(dailyPost);
 });
 
-// NEW: "Generate Another" Friction Logic
+// "Generate Another" Friction Logic
 generateAnotherBtn.addEventListener('click', () => {
     if (generateClickCount === 0) {
         // First click: Show friction warning
@@ -124,7 +101,7 @@ generateAnotherBtn.addEventListener('click', () => {
     }
 });
 
-// NEW: Open specific model from Archive
+// Open specific model from Archive
 window.openModel = (postId) => {
     const post = posts.find(p => p.id === postId);
     if (post) {
@@ -133,110 +110,57 @@ window.openModel = (postId) => {
     }
 };
 
-// ... [Keep your typeWriterEffect function exactly the same] ...
-
 // ==========================================
-// 4. DATABASE FETCH & FEED RENDER UPDATES
+// 4. DATABASE FETCH & FEED RENDER
 // ==========================================
+async function fetchPosts() {
+    try {
+        // Fetch posts
+        const { data: postData, error: postError } = await supabase.from('posts').select('*');
 
-function renderFeed() {
-    const feedContainer = document.getElementById('feed-container');
-    feedContainer.innerHTML = '';
+        if (postError) throw new Error(postError.message);
+        
+        if (!postData || postData.length === 0) {
+            console.warn("Supabase returned empty array. RLS might be enabled, or table is empty.");
+            posts = [...MOCK_DATA];
+            renderFeed();
+            return;
+        }
 
-    // Sorting Logic...
-    let sortedPosts = [...posts];
-    if (currentSort === 'newest') sortedPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    else if (currentSort === 'top') sortedPosts.sort((a, b) => b.upvotes - a.upvotes);
-    else if (currentSort === 'discussed') sortedPosts.sort((a, b) => b.comment_count - a.comment_count);
+        // Safely try to fetch comments (won't crash if table doesn't exist yet)
+        let commentData = [];
+        try {
+            const { data } = await supabase.from('comments').select('*');
+            if (data) commentData = data;
+        } catch (e) {
+            console.warn("Comments table not found or accessible.");
+        }
 
-    sortedPosts.forEach(post => {
-// ... [Keep your Supabase init and fetchPosts logic from previous code] ...
+        // Merge comments into posts safely
+        posts = postData.map(post => {
+            const postComments = commentData.filter(c => c.post_id === post.id);
+            return {
+                ...post,
+                comments: postComments,
+                comment_count: postComments.length,
+                upvotes: post.upvotes || 0,
+                downvotes: post.downvotes || 0
+            };
+        });
 
-// ==========================================
-// 3. CORE UI FLOW & NEW INTERACTIONS
-// ==========================================
-const revealBtn = document.getElementById('reveal-btn');
-const takeawayContainer = document.getElementById('takeaway-container');
-const takeawayText = document.getElementById('takeaway-text');
-const ctaText = document.getElementById('cta-text');
-const generateContainer = document.getElementById('generate-container');
-const generateAnotherBtn = document.getElementById('generate-another-btn');
-const generateWarning = document.getElementById('generate-warning');
-
-let generateClickCount = 0;
-let isTyping = false;
-
-async function triggerTakeaway(postData) {
-    if (isTyping) return;
-    isTyping = true;
+    } catch (e) {
+        console.warn("Supabase fetch failed. Ensure RLS is disabled on 'posts' table.", e);
+        posts = [...MOCK_DATA];
+    }
     
-    // Reset states
-    ctaText.classList.remove('opacity-100');
-    ctaText.classList.add('opacity-0');
-    generateContainer.classList.remove('opacity-100');
-    generateContainer.classList.add('opacity-0');
-    generateWarning.classList.add('hidden');
-    generateClickCount = 0;
-
-    takeawayContainer.classList.remove('hidden');
-    takeawayContainer.classList.add('flex');
-    
-    // Scroll to top smoothly
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    await typeWriterEffect(takeawayText, postData.text, postData.highlighted_words);
-    
-    // Fade in CTA and Generate buttons
-    setTimeout(() => {
-        ctaText.classList.remove('opacity-0');
-        ctaText.classList.add('opacity-100');
-        generateContainer.classList.remove('opacity-0');
-        generateContainer.classList.add('opacity-100');
-        isTyping = false;
-    }, 500);
+    renderFeed();
 }
 
-revealBtn.addEventListener('click', () => {
-    revealBtn.classList.add('hidden');
-    const dailyPost = posts[0] || MOCK_DATA[0];
-    triggerTakeaway(dailyPost);
-});
-
-// NEW: "Generate Another" Friction Logic
-generateAnotherBtn.addEventListener('click', () => {
-    if (generateClickCount === 0) {
-        // First click: Show friction warning
-        generateWarning.classList.remove('hidden');
-        generateAnotherBtn.innerText = "Yes, show me another";
-        generateClickCount++;
-    } else {
-        // Second click: Reveal random model
-        const randomPost = posts[Math.floor(Math.random() * posts.length)];
-        triggerTakeaway(randomPost);
-        generateAnotherBtn.innerText = "Reveal Another Model";
-    }
-});
-
-// NEW: Open specific model from Archive
-window.openModel = (postId) => {
-    const post = posts.find(p => p.id === postId);
-    if (post) {
-        revealBtn.classList.add('hidden');
-        triggerTakeaway(post);
-    }
-};
-
-// ... [Keep your typeWriterEffect function exactly the same] ...
-
-// ==========================================
-// 4. DATABASE FETCH & FEED RENDER UPDATES
-// ==========================================
-
 function renderFeed() {
     const feedContainer = document.getElementById('feed-container');
     feedContainer.innerHTML = '';
 
-    // Sorting Logic...
+    // Sorting Logic
     let sortedPosts = [...posts];
     if (currentSort === 'newest') sortedPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     else if (currentSort === 'top') sortedPosts.sort((a, b) => b.upvotes - a.upvotes);
@@ -246,30 +170,44 @@ function renderFeed() {
         const postEl = document.createElement('article');
         postEl.className = 'flex flex-col space-y-4';
 
-        // NEW: Make the text a clickable button that triggers openModel()
         postEl.innerHTML = `
             <button onclick="openModel(${post.id})" class="text-left text-xl md:text-2xl font-bold leading-relaxed tracking-tight hover:text-gray-500 transition-colors duration-200">
                 ${post.text}
             </button>
             
-            `;
-        // ... (append the rest of the innerHTML for votes and comments here)
+            <div class="flex items-center space-x-6 text-sm font-bold text-gray-500">
+                <button class="hover:text-black transition-colors flex items-center space-x-2" onclick="handleVote(${post.id}, 'upvote')">
+                    <span>↑</span> <span id="upvotes-${post.id}">${post.upvotes}</span>
+                </button>
+                <button class="hover:text-black transition-colors flex items-center space-x-2" onclick="handleVote(${post.id}, 'downvote')">
+                    <span>↓</span> <span id="downvotes-${post.id}">${post.downvotes}</span>
+                </button>
+                <button class="hover:text-black transition-colors flex items-center space-x-2" onclick="toggleComments(${post.id})">
+                    <span>💬</span> <span>${post.comment_count}</span>
+                </button>
+            </div>
+
+            <div id="comments-${post.id}" class="hidden flex-col space-y-4 mt-4 pl-4 border-l-2 border-gray-200">
+                <div id="comment-list-${post.id}" class="space-y-4 text-sm">
+                    ${post.comments.map(c => `<div class="text-gray-900">${c.text}</div>`).join('')}
+                </div>
+                <form onsubmit="submitComment(event, ${post.id})" class="flex mt-2">
+                    <input type="text" name="commentText" placeholder="Add a direct thought..." required class="flex-1 bg-transparent border-b border-gray-300 focus:border-black outline-none py-2 text-sm transition-colors rounded-none">
+                    <button type="submit" class="ml-4 text-sm font-bold uppercase hover:text-gray-500 transition-colors">Post</button>
+                </form>
+            </div>
+        `;
         feedContainer.appendChild(postEl);
     });
 }
-// ... [Keep the rest of your vote, comment, and sort logic exactly the same] ...
-
 
 // ==========================================
 // 5. INTERACTIVITY: VOTING, COMMENTS, SORTING
 // ==========================================
-
-// Attach to window object to be accessible from inline HTML onclick handlers
 window.handleVote = async (postId, type) => {
     const postIndex = posts.findIndex(p => p.id === postId);
     if (postIndex === -1) return;
 
-    // Optimistic UI Update
     if (type === 'upvote') {
         posts[postIndex].upvotes++;
         document.getElementById(`upvotes-${postId}`).innerText = posts[postIndex].upvotes;
@@ -278,13 +216,9 @@ window.handleVote = async (postId, type) => {
         document.getElementById(`downvotes-${postId}`).innerText = posts[postIndex].downvotes;
     }
 
-    // Supabase Update (Only runs if data isn't mock data based on ID type)
-    if (typeof postId === 'number' && postId < 100) return; // Prevent updating MOCK_DATA in Supabase
+    if (typeof postId === 'number' && postId < 100) return; // Prevent mock update
 
-    const updateData = type === 'upvote' 
-        ? { upvotes: posts[postIndex].upvotes } 
-        : { downvotes: posts[postIndex].downvotes };
-        
+    const updateData = type === 'upvote' ? { upvotes: posts[postIndex].upvotes } : { downvotes: posts[postIndex].downvotes };
     await supabase.from('posts').update(updateData).eq('id', postId);
 };
 
@@ -301,35 +235,26 @@ window.submitComment = async (event, postId) => {
     if (!text) return;
 
     const newComment = { post_id: postId, text: text, created_at: new Date().toISOString() };
-
-    // Optimistic UI Update
     const postIndex = posts.findIndex(p => p.id === postId);
+    
     posts[postIndex].comments.push(newComment);
     posts[postIndex].comment_count++;
     
-    // Re-render feed to reflect new comment count & list
     renderFeed();
     
-    // Keep the comment section open after re-rendering
     document.getElementById(`comments-${postId}`).classList.remove('hidden');
     document.getElementById(`comments-${postId}`).classList.add('flex');
 
-    // Supabase Insertion (Only runs if data isn't mock data)
     if (typeof postId === 'number' && postId < 100) return; 
-
     await supabase.from('comments').insert([newComment]);
 };
 
-// Sort Switcher Logic
 document.querySelectorAll('.sort-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        // Reset styles
         document.querySelectorAll('.sort-btn').forEach(b => {
             b.classList.remove('text-black', 'border-black');
             b.classList.add('text-gray-500', 'border-transparent');
         });
-        
-        // Apply active style
         e.target.classList.remove('text-gray-500', 'border-transparent');
         e.target.classList.add('text-black', 'border-black');
         
