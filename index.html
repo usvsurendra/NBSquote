@@ -32,11 +32,17 @@
         Objective: Get the point and discuss it. Stop reading whole books for one concept.
     </div>
 
-    <header class="w-full max-w-3xl px-6 py-8 flex justify-between items-center">
-        <h1 class="text-2xl font-black tracking-tighter uppercase">NBS.</h1>
+    <header class="w-full max-w-4xl px-6 py-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+        
+        <a href="#" onclick="window.location.reload(); return false;" class="text-3xl font-black tracking-tighter uppercase hover:text-gray-500 transition-colors duration-200">
+            N<sub class="text-sm font-bold align-baseline">o</sub>B<sub class="text-sm font-bold align-baseline">ull</sub>S<sub class="text-sm font-bold align-baseline">hit</sub>
+        </a>
+
+        <nav id="category-nav" class="flex flex-wrap justify-center gap-4 text-xs font-bold tracking-widest uppercase text-gray-500">
+            </nav>
     </header>
 
-    <main class="w-full max-w-2xl px-6 flex-1 flex flex-col items-center justify-start mt-8">
+    <main class="w-full max-w-2xl px-6 flex-1 flex flex-col items-center justify-start mt-4">
         
         <section id="daily-section" class="w-full min-h-[350px] flex flex-col items-center justify-center text-center space-y-8">
             <button id="reveal-btn" class="px-8 py-4 bg-black text-white text-sm font-bold tracking-widest uppercase hover:bg-gray-900 transition-colors duration-200">
@@ -66,7 +72,7 @@
 
         <section id="archive-section" class="w-full pb-24">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 space-y-4 sm:space-y-0">
-                <h3 class="text-sm font-bold tracking-widest uppercase text-gray-500">Archive</h3>
+                <h3 id="archive-title" class="text-sm font-bold tracking-widest uppercase text-gray-500">Archive (All)</h3>
                 <div class="flex space-x-4 text-sm font-medium">
                     <button class="sort-btn text-black border-b-2 border-black pb-1" data-sort="newest">Newest</button>
                     <button class="sort-btn text-gray-500 hover:text-black transition-colors pb-1 border-b-2 border-transparent" data-sort="top">Top Upvoted</button>
