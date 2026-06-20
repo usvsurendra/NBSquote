@@ -35,33 +35,45 @@
 </head>
 <body class="antialiased min-h-screen flex flex-col items-center selection:bg-black selection:text-white">
 
-    <header class="w-full max-w-3xl px-6 py-12 flex justify-between items-center">
-        <h1 class="text-xl font-black tracking-tighter uppercase">NBS.</h1>
+    <div class="w-full bg-black text-white text-[10px] md:text-xs font-bold uppercase tracking-widest py-3 px-6 text-center">
+        Objective: Get the point and discuss it. Stop reading whole books for one concept.
+    </div>
+
+    <header class="w-full max-w-3xl px-6 py-8 flex justify-between items-center">
+        <h1 class="text-2xl font-black tracking-tighter uppercase">NBS.</h1>
     </header>
 
-    <main class="w-full max-w-2xl px-6 flex-1 flex flex-col items-center justify-start mt-12">
+    <main class="w-full max-w-2xl px-6 flex-1 flex flex-col items-center justify-start mt-8">
         
-        <section id="daily-section" class="w-full min-h-[300px] flex flex-col items-center justify-center text-center space-y-8">
+        <section id="daily-section" class="w-full min-h-[350px] flex flex-col items-center justify-center text-center space-y-8">
             <button id="reveal-btn" class="px-8 py-4 bg-black text-white text-sm font-bold tracking-widest uppercase hover:bg-gray-900 transition-colors duration-200">
                 Today's Takeaway
             </button>
             
-            <div id="takeaway-container" class="w-full hidden flex-col items-center space-y-12">
-                <h2 id="takeaway-text" class="text-3xl md:text-5xl font-black leading-tight md:leading-snug tracking-tight text-center max-w-2xl">
+            <div id="takeaway-container" class="w-full hidden flex-col items-center space-y-8">
+                <h2 id="takeaway-text" class="text-3xl md:text-5xl font-black leading-tight md:leading-snug tracking-tight text-center max-w-2xl min-h-[120px]">
                     </h2>
                 
                 <p id="cta-text" class="opacity-0 transition-opacity duration-1000 ease-in text-gray-500 font-medium text-sm md:text-base tracking-wide uppercase">
                     Now, close this tab and go discuss this concept with a friend or mentor today.
                 </p>
+
+                <div id="generate-container" class="flex flex-col items-center opacity-0 transition-opacity duration-1000 ease-in mt-8">
+                    <p id="generate-warning" class="text-xs font-bold text-black bg-gray-200 px-4 py-2 hidden mb-4 rounded-sm">
+                        Did you actually discuss this yet? Click again if you still want another.
+                    </p>
+                    <button id="generate-another-btn" class="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-black transition-colors pb-1 border-b border-transparent hover:border-black">
+                        Reveal Another Model
+                    </button>
+                </div>
             </div>
         </section>
 
-        <hr class="w-full border-gray-300 my-24">
+        <hr class="w-full border-gray-300 my-16">
 
         <section id="archive-section" class="w-full pb-24">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 space-y-4 sm:space-y-0">
                 <h3 class="text-sm font-bold tracking-widest uppercase text-gray-500">Archive</h3>
-                
                 <div class="flex space-x-4 text-sm font-medium">
                     <button class="sort-btn text-black border-b-2 border-black pb-1" data-sort="newest">Newest</button>
                     <button class="sort-btn text-gray-500 hover:text-black transition-colors pb-1 border-b-2 border-transparent" data-sort="top">Top Upvoted</button>
@@ -72,9 +84,9 @@
             <div id="feed-container" class="w-full space-y-16">
                 </div>
         </section>
-
     </main>
 
     <script type="module" src="script.js"></script>
 </body>
+    
 </html>
