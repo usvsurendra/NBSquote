@@ -14,40 +14,7 @@ let posts = [];
 let currentSort = 'newest';
 
 // Fallback data if your Supabase tables are currently empty
-const MOCK_DATA = [
-    {
-        id: 1,
-        text: "The map is not the territory. Reality is far more complex than the models we use to understand it.",
-        highlighted_words: ["map", "territory.", "Reality"],
-        upvotes: 142,
-        downvotes: 12,
-        comment_count: 5,
-        created_at: "2026-06-19T00:00:00Z",
-        comments: [
-            { id: 101, text: "Always forget this when looking at financial models.", created_at: "2026-06-19T01:00:00Z" }
-        ]
-    },
-    {
-        id: 2,
-        text: "Inversion. Instead of asking how to achieve success, ask how to guarantee failure, and avoid those things.",
-        highlighted_words: ["Inversion.", "guarantee", "failure,"],
-        upvotes: 350,
-        downvotes: 5,
-        comment_count: 18,
-        created_at: "2026-06-18T00:00:00Z",
-        comments: []
-    },
-    {
-        id: 3,
-        text: "Occam's Razor. When presented with competing hypotheses about the same prediction, one should select the solution with the fewest assumptions.",
-        highlighted_words: ["Occam's", "Razor.", "fewest", "assumptions."],
-        upvotes: 89,
-        downvotes: 21,
-        comment_count: 2,
-        created_at: "2026-06-17T00:00:00Z",
-        comments: []
-    }
-];
+
 
 // ==========================================
 // 3. CORE UI FLOW: REVEAL & TYPEWRITER
